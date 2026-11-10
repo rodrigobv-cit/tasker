@@ -22,6 +22,9 @@ def build_parser() -> argparse.ArgumentParser:
     filter_group.add_argument("--pending", action="store_true")
     filter_group.add_argument("--done", action="store_true")
 
+    done_parser = subparsers.add_parser("done", help="mark a task done")
+    done_parser.add_argument("id", type=int)
+
     return parser
 
 
@@ -48,6 +51,17 @@ def list_tasks(store: TaskStore, *, pending: bool = False, done: bool = False) -
     return "\n".join(lines)
 
 
+def complete_task(store: TaskStore, task_id: int) -> str:
+    task = store.get(task_id)
+    if task is None:
+        raise CliError(f"no task with id {task_id}")
+    if task.done:
+        return f"Task #{task_id} is already done."
+    task.done = True
+    store.save()
+    return f"Task #{task_id} marked done."
+
+
 def run(store: TaskStore, argv: list[str]) -> str:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -56,6 +70,8 @@ def run(store: TaskStore, argv: list[str]) -> str:
         return add_task(store, args.title)
     if args.command == "list":
         return list_tasks(store, pending=args.pending, done=args.done)
+    if args.command == "done":
+        return complete_task(store, args.id)
 
     raise CliError(f"unknown command: {args.command}")
 

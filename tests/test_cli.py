@@ -49,3 +49,27 @@ def test_list_done_filters_to_finished(tmp_path):
     done.done = True
 
     assert run(store, ["list", "--done"]) == "[x] #2 Walk the dog"
+
+
+def test_done_marks_task_complete(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+
+    output = run(store, ["done", "1"])
+    assert output == "Task #1 marked done."
+    assert store.get(1).done is True
+
+
+def test_done_unknown_id_raises_without_changing_file(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    with pytest.raises(CliError):
+        run(store, ["done", "999"])
+
+
+def test_done_already_done_is_idempotent(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+    run(store, ["done", "1"])
+
+    output = run(store, ["done", "1"])
+    assert output == "Task #1 is already done."

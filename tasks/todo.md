@@ -61,11 +61,11 @@
 ### Task 4.1: done command
 **Description:** Implement `complete_task(store, id)` and wire the `done` CLI subcommand.
 **Acceptance criteria:**
-- [ ] `tasker done <id>` sets `done=True`, prints confirmation
-- [ ] Unknown id → error naming the id, non-zero exit, no file changes
-- [ ] Already-done task → idempotent, no error, confirms already done
+- [x] `tasker done <id>` sets `done=True`, prints confirmation
+- [x] Unknown id → error naming the id, non-zero exit, no file changes
+- [x] Already-done task → idempotent, no error, confirms already done
 **Verification:**
-- [ ] `pytest tests/test_cli.py -k done`
+- [x] `pytest tests/test_cli.py -k done`
 **Dependencies:** Feature 2 (needs a task to mark done in tests)
 **Files likely touched:** `src/tasker/cli.py`, `tests/test_cli.py`
 **Estimated scope:** S (2 files)

@@ -19,6 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     list_parser = subparsers.add_parser("list", help="list tasks")
     filter_group = list_parser.add_mutually_exclusive_group()
+    filter_group.add_argument("--all", action="store_true", help="show every task (default)")
     filter_group.add_argument("--pending", action="store_true")
     filter_group.add_argument("--done", action="store_true")
 
@@ -112,10 +113,7 @@ def main() -> int:
         file_path = Path(_extract_file_option(argv))
         store = TaskStore.load(file_path)
         print(run(store, argv))
-    except TaskStoreError as exc:
-        print(f"Error: {exc}", file=sys.stderr)
-        return 1
-    except CliError as exc:
+    except (TaskStoreError, CliError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
     return 0

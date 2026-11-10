@@ -24,7 +24,14 @@ class TaskStore:
         except json.JSONDecodeError as exc:
             raise TaskStoreError(f"{path} is not valid JSON: {exc}") from exc
 
-        tasks = [Task(**item) for item in raw]
+        if not isinstance(raw, list):
+            raise TaskStoreError(f"{path} must contain a JSON list of tasks")
+
+        try:
+            tasks = [Task(**item) for item in raw]
+        except (TypeError, AttributeError) as exc:
+            raise TaskStoreError(f"{path} contains a malformed task entry: {exc}") from exc
+
         return cls(path, tasks)
 
     def save(self) -> None:

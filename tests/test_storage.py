@@ -17,6 +17,22 @@ def test_load_corrupt_json_raises_clear_error(tmp_path):
         TaskStore.load(path)
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        "{}",
+        "null",
+        '[{"id": 1}]',
+        '[{"id": 1, "title": "x", "done": false, "priority": "high"}]',
+    ],
+)
+def test_load_malformed_shape_raises_clear_error_not_traceback(tmp_path, content):
+    path = tmp_path / "tasks.json"
+    path.write_text(content, encoding="utf-8")
+    with pytest.raises(TaskStoreError):
+        TaskStore.load(path)
+
+
 def test_add_assigns_unique_incrementing_ids(tmp_path):
     store = TaskStore.load(tmp_path / "tasks.json")
     first = store.add("Buy milk")

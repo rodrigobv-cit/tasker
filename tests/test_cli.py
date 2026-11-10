@@ -33,6 +33,15 @@ def test_list_all_shows_every_task_with_status(tmp_path):
     assert output == "[ ] #1 Buy milk\n[x] #2 Walk the dog"
 
 
+def test_list_explicit_all_flag_matches_default(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+    done = store.add("Walk the dog")
+    done.done = True
+
+    assert run(store, ["list", "--all"]) == run(store, ["list"])
+
+
 def test_list_pending_filters_to_unfinished(tmp_path):
     store = TaskStore.load(tmp_path / "tasks.json")
     store.add("Buy milk")
@@ -91,6 +100,14 @@ def test_edit_unknown_id_raises(tmp_path):
     store = TaskStore.load(tmp_path / "tasks.json")
     with pytest.raises(CliError):
         run(store, ["edit", "999", "new title"])
+
+
+def test_edit_rejects_empty_title(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+    with pytest.raises(CliError):
+        run(store, ["edit", "1", "   "])
+    assert store.get(1).title == "Buy milk"
 
 
 def test_delete_removes_task(tmp_path):

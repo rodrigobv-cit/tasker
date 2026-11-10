@@ -1,4 +1,5 @@
 tasks.json
+/sessions/
 __pycache__/
 *.pyc
 .pytest_cache/

@@ -25,6 +25,10 @@ def build_parser() -> argparse.ArgumentParser:
     done_parser = subparsers.add_parser("done", help="mark a task done")
     done_parser.add_argument("id", type=int)
 
+    edit_parser = subparsers.add_parser("edit", help="edit a task's title")
+    edit_parser.add_argument("id", type=int)
+    edit_parser.add_argument("title")
+
     return parser
 
 
@@ -62,6 +66,18 @@ def complete_task(store: TaskStore, task_id: int) -> str:
     return f"Task #{task_id} marked done."
 
 
+def edit_task(store: TaskStore, task_id: int, title: str) -> str:
+    task = store.get(task_id)
+    if task is None:
+        raise CliError(f"no task with id {task_id}")
+    title = title.strip()
+    if not title:
+        raise CliError("title must not be empty")
+    task.title = title
+    store.save()
+    return f"Task #{task_id} updated: {title}"
+
+
 def run(store: TaskStore, argv: list[str]) -> str:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -72,6 +88,8 @@ def run(store: TaskStore, argv: list[str]) -> str:
         return list_tasks(store, pending=args.pending, done=args.done)
     if args.command == "done":
         return complete_task(store, args.id)
+    if args.command == "edit":
+        return edit_task(store, args.id, args.title)
 
     raise CliError(f"unknown command: {args.command}")
 

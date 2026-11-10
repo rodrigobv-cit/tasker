@@ -73,3 +73,21 @@ def test_done_already_done_is_idempotent(tmp_path):
 
     output = run(store, ["done", "1"])
     assert output == "Task #1 is already done."
+
+
+def test_edit_updates_title_only(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+    run(store, ["done", "1"])
+
+    output = run(store, ["edit", "1", "Buy oat milk"])
+    assert output == "Task #1 updated: Buy oat milk"
+    task = store.get(1)
+    assert task.title == "Buy oat milk"
+    assert task.done is True
+
+
+def test_edit_unknown_id_raises(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    with pytest.raises(CliError):
+        run(store, ["edit", "999", "new title"])

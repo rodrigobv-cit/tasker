@@ -75,10 +75,10 @@
 ### Task 5.1: edit command
 **Description:** Implement `edit_task(store, id, title)` and wire the `edit` CLI subcommand.
 **Acceptance criteria:**
-- [ ] `tasker edit <id> "new title"` updates title only, id/done untouched
-- [ ] Unknown id → same error behavior as `done`
+- [x] `tasker edit <id> "new title"` updates title only, id/done untouched
+- [x] Unknown id → same error behavior as `done`
 **Verification:**
-- [ ] `pytest tests/test_cli.py -k edit`
+- [x] `pytest tests/test_cli.py -k edit`
 **Dependencies:** Feature 2
 **Files likely touched:** `src/tasker/cli.py`, `tests/test_cli.py`
 **Estimated scope:** S (2 files)

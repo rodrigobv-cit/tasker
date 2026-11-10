@@ -17,6 +17,11 @@ def build_parser() -> argparse.ArgumentParser:
     add_parser = subparsers.add_parser("add", help="add a new task")
     add_parser.add_argument("title")
 
+    list_parser = subparsers.add_parser("list", help="list tasks")
+    filter_group = list_parser.add_mutually_exclusive_group()
+    filter_group.add_argument("--pending", action="store_true")
+    filter_group.add_argument("--done", action="store_true")
+
     return parser
 
 
@@ -29,12 +34,28 @@ def add_task(store: TaskStore, title: str) -> str:
     return f"Added #{task.id}: {task.title}"
 
 
+def list_tasks(store: TaskStore, *, pending: bool = False, done: bool = False) -> str:
+    tasks = store.all()
+    if pending:
+        tasks = [t for t in tasks if not t.done]
+    elif done:
+        tasks = [t for t in tasks if t.done]
+
+    if not tasks:
+        return "No tasks."
+
+    lines = [f"[{'x' if t.done else ' '}] #{t.id} {t.title}" for t in tasks]
+    return "\n".join(lines)
+
+
 def run(store: TaskStore, argv: list[str]) -> str:
     parser = build_parser()
     args = parser.parse_args(argv)
 
     if args.command == "add":
         return add_task(store, args.title)
+    if args.command == "list":
+        return list_tasks(store, pending=args.pending, done=args.done)
 
     raise CliError(f"unknown command: {args.command}")
 

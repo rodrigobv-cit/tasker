@@ -5,10 +5,10 @@
 ### Task 1.1: Scaffold package + Task dataclass
 **Description:** Create the package skeleton and the `Task` dataclass.
 **Acceptance criteria:**
-- [ ] `pyproject.toml` defines the `tasker` package and a `pytest` dev dependency
-- [ ] `src/tasker/models.py` defines `Task(id: int, title: str, done: bool = False)`
+- [x] `pyproject.toml` defines the `tasker` package and a `pytest` dev dependency
+- [x] `src/tasker/models.py` defines `Task(id: int, title: str, done: bool = False)`
 **Verification:**
-- [ ] `python -c "from tasker.models import Task"` succeeds after `pip install -e .`
+- [x] `python -c "from tasker.models import Task"` succeeds after `pip install -e .`
 **Dependencies:** None
 **Files likely touched:** `pyproject.toml`, `src/tasker/__init__.py`, `src/tasker/models.py`
 **Estimated scope:** XS (2 files)
@@ -16,28 +16,28 @@
 ### Task 1.2: TaskStore load/save with first-run and corrupt-file handling
 **Description:** Implement `storage.py` with `TaskStore.load`, `.save`, `.add`, `.get`, `.all`, backed by a JSON file path.
 **Acceptance criteria:**
-- [ ] Missing file → `TaskStore.load` returns an empty store (no error)
-- [ ] Invalid JSON → raises a `TaskStoreError` with a clear message (no raw traceback surfaced to the CLI)
-- [ ] `save` writes valid JSON that `load` can read back byte-for-byte equivalent
+- [x] Missing file → `TaskStore.load` returns an empty store (no error)
+- [x] Invalid JSON → raises a `TaskStoreError` with a clear message (no raw traceback surfaced to the CLI)
+- [x] `save` writes valid JSON that `load` can read back byte-for-byte equivalent
 **Verification:**
-- [ ] `pytest tests/test_storage.py`
+- [x] `pytest tests/test_storage.py`
 **Dependencies:** Task 1.1
 **Files likely touched:** `src/tasker/storage.py`, `tests/test_storage.py`
 **Estimated scope:** S (2 files)
 
 ## Checkpoint: Feature 1 complete
-- [ ] `pytest tests/test_storage.py` passes
-- [ ] Manual check: delete `tasks.json`, run anything → no crash; write garbage into `tasks.json` → clear error
+- [x] `pytest tests/test_storage.py` passes
+- [x] Manual check: delete `tasks.json`, run anything → no crash; write garbage into `tasks.json` → clear error
 
 ## Feature 2: Add a task (Use Case 1)
 
 ### Task 2.1: add command
 **Description:** Implement `add_task(store, title)` and wire the `add` CLI subcommand.
 **Acceptance criteria:**
-- [ ] `tasker add "Buy milk"` creates a task with a unique id, `done=False`, prints `Added #<id>: <title>`
-- [ ] Empty/whitespace title → rejected with a non-zero exit and an error message, no task created
+- [x] `tasker add "Buy milk"` creates a task with a unique id, `done=False`, prints `Added #<id>: <title>`
+- [x] Empty/whitespace title → rejected with a non-zero exit and an error message, no task created
 **Verification:**
-- [ ] `pytest tests/test_cli.py -k add`
+- [x] `pytest tests/test_cli.py -k add`
 **Dependencies:** Feature 1
 **Files likely touched:** `src/tasker/cli.py`, `tests/test_cli.py`
 **Estimated scope:** S (2 files)
@@ -47,11 +47,11 @@
 ### Task 3.1: list command
 **Description:** Implement `list_tasks(store, filter)` and wire the `list` CLI subcommand with `--all`/`--pending`/`--done`.
 **Acceptance criteria:**
-- [ ] `tasker list` prints every task with id, `[ ]`/`[x]`, and title
-- [ ] `--pending` / `--done` filter correctly
-- [ ] No tasks → friendly "no tasks" message, not an error
+- [x] `tasker list` prints every task with id, `[ ]`/`[x]`, and title
+- [x] `--pending` / `--done` filter correctly
+- [x] No tasks → friendly "no tasks" message, not an error
 **Verification:**
-- [ ] `pytest tests/test_cli.py -k list`
+- [x] `pytest tests/test_cli.py -k list`
 **Dependencies:** Feature 1 (can run parallel to Feature 2 — no shared state beyond the store)
 **Files likely touched:** `src/tasker/cli.py`, `tests/test_cli.py`
 **Estimated scope:** S (2 files)

@@ -29,6 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
     edit_parser.add_argument("id", type=int)
     edit_parser.add_argument("title")
 
+    delete_parser = subparsers.add_parser("delete", help="delete a task")
+    delete_parser.add_argument("id", type=int)
+
     return parser
 
 
@@ -78,6 +81,13 @@ def edit_task(store: TaskStore, task_id: int, title: str) -> str:
     return f"Task #{task_id} updated: {title}"
 
 
+def delete_task(store: TaskStore, task_id: int) -> str:
+    if not store.delete(task_id):
+        raise CliError(f"no task with id {task_id}")
+    store.save()
+    return f"Task #{task_id} deleted."
+
+
 def run(store: TaskStore, argv: list[str]) -> str:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -90,6 +100,8 @@ def run(store: TaskStore, argv: list[str]) -> str:
         return complete_task(store, args.id)
     if args.command == "edit":
         return edit_task(store, args.id, args.title)
+    if args.command == "delete":
+        return delete_task(store, args.id)
 
     raise CliError(f"unknown command: {args.command}")
 

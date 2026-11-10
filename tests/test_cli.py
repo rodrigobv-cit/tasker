@@ -91,3 +91,20 @@ def test_edit_unknown_id_raises(tmp_path):
     store = TaskStore.load(tmp_path / "tasks.json")
     with pytest.raises(CliError):
         run(store, ["edit", "999", "new title"])
+
+
+def test_delete_removes_task(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+
+    output = run(store, ["delete", "1"])
+    assert output == "Task #1 deleted."
+    assert store.get(1) is None
+
+
+def test_delete_unknown_id_raises_without_changing_file(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+    with pytest.raises(CliError):
+        run(store, ["delete", "999"])
+    assert len(store.all()) == 1

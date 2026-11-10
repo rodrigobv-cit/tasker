@@ -88,16 +88,16 @@
 ### Task 6.1: delete command
 **Description:** Implement `delete_task(store, id)` and wire the `delete` CLI subcommand.
 **Acceptance criteria:**
-- [ ] `tasker delete <id>` removes the task, prints confirmation
-- [ ] Unknown id → error, non-zero exit, no file changes
+- [x] `tasker delete <id>` removes the task, prints confirmation
+- [x] Unknown id → error, non-zero exit, no file changes
 **Verification:**
-- [ ] `pytest tests/test_cli.py -k delete`
+- [x] `pytest tests/test_cli.py -k delete`
 **Dependencies:** Feature 2
 **Files likely touched:** `src/tasker/cli.py`, `tests/test_cli.py`
 **Estimated scope:** S (2 files)
 
 ## Checkpoint: Complete
-- [ ] `pytest` passes (all tests, every command covered)
-- [ ] `README.md` written
-- [ ] One git commit per Feature, clean history
-- [ ] Ready for code review
+- [x] `pytest` passes (all tests, every command covered)
+- [x] `README.md` written
+- [x] One git commit per Feature, clean history
+- [x] Ready for code review

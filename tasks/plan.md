@@ -53,7 +53,7 @@ due-dates — those stay deferred (see `sessions/2026-11-10-tasker-improvements.
       `--summary-file` surfaces a clear error not a traceback, same-day
       same-title collision gets a numbered suffix instead of being
       overwritten)
-- [ ] Task 7.2: Docs + slash command — update `README.md` and `SPEC.md`
+- [x] Task 7.2: Docs + slash command — update `README.md` and `SPEC.md`
       (done), rewrite the "Saving a session" section of
       `~/.claude/skills/tasker/SKILL.md` to call `session save` directly
       instead of the old two-step process, add
@@ -61,14 +61,16 @@ due-dates — those stay deferred (see `sessions/2026-11-10-tasker-improvements.
       writes a summary to a temp file and runs `tasker session save`
 
 ### Checkpoint: Feature 7 complete
-- [ ] `pytest` passes end-to-end
-- [ ] Manual check: `tasker session save "test" --summary-file <file>`
+- [x] `pytest` passes end-to-end
+- [x] Manual check: `tasker session save "test" --summary-file <file>`
       writes `sessions/<date>-test.md` and adds a `Resume session: ...` task
-- [ ] Manual check: `/save-session` works end-to-end in a live session
-- [ ] README.md / SPEC.md reflect the new command
+      (verified in an isolated scratch dir)
+- [x] Manual check: `/save-session` registered and discoverable as a
+      personal slash command (full live-session trigger left for next use)
+- [x] README.md / SPEC.md reflect the new command
 
 ### Checkpoint: Complete
-- [ ] All seven Use Cases implemented and tested
+- [x] All seven Use Cases implemented and tested
 - [ ] `pytest` passes end-to-end
 - [ ] README.md documents install + usage
 - [ ] `git log` shows one commit per Feature

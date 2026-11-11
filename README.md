@@ -21,7 +21,14 @@ tasker list --done
 tasker done 1
 tasker edit 1 "Buy oat milk"
 tasker delete 1
+tasker session save "Billing spec review" --summary-file notes.md
+echo "Piped summary" | tasker session save "Quick note"
 ```
+
+`session save` writes the summary to
+`sessions/<date>-<slug-of-title>.md` (sibling of the tasks file) and adds a
+`Resume session: <title> (see sessions/<file>.md)` task in one call. Omit
+`--summary-file` to pipe the summary in via stdin instead.
 
 Use `--file path/to/tasks.json` to point at a different storage file. `--file`
 must come *before* the subcommand (`tasker --file x.json add ...`), not after.

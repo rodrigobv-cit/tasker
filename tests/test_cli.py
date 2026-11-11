@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from tasker.cli import CliError, run
@@ -125,3 +127,82 @@ def test_delete_unknown_id_raises_without_changing_file(tmp_path):
     with pytest.raises(CliError):
         run(store, ["delete", "999"])
     assert len(store.all()) == 1
+
+
+def test_session_save_writes_file_and_creates_linked_task(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    summary_file = tmp_path / "notes.md"
+    summary_file.write_text("Status: in progress.", encoding="utf-8")
+
+    output = run(store, ["session", "save", "My Session", "--summary-file", str(summary_file)])
+
+    today = date.today().isoformat()
+    expected_filename = f"{today}-my-session.md"
+    assert output == (
+        f"Saved session to sessions/{expected_filename}\n"
+        f"Added #1: Resume session: My Session (see sessions/{expected_filename})"
+    )
+    saved = tmp_path / "sessions" / expected_filename
+    assert saved.read_text(encoding="utf-8") == "Status: in progress.\n"
+    assert store.all()[0].title == f"Resume session: My Session (see sessions/{expected_filename})"
+
+
+def test_session_save_reads_summary_from_stdin_when_no_file_given(tmp_path, monkeypatch):
+    import io
+
+    store = TaskStore.load(tmp_path / "tasks.json")
+    monkeypatch.setattr("sys.stdin", io.StringIO("Piped summary."))
+
+    run(store, ["session", "save", "Piped"])
+
+    today = date.today().isoformat()
+    saved = tmp_path / "sessions" / f"{today}-piped.md"
+    assert saved.read_text(encoding="utf-8") == "Piped summary.\n"
+
+
+def test_session_save_rejects_empty_title(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    summary_file = tmp_path / "notes.md"
+    summary_file.write_text("content", encoding="utf-8")
+
+    with pytest.raises(CliError):
+        run(store, ["session", "save", "  ", "--summary-file", str(summary_file)])
+    assert store.all() == []
+    assert not (tmp_path / "sessions").exists()
+
+
+def test_session_save_rejects_empty_summary(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    summary_file = tmp_path / "notes.md"
+    summary_file.write_text("   ", encoding="utf-8")
+
+    with pytest.raises(CliError):
+        run(store, ["session", "save", "My Session", "--summary-file", str(summary_file)])
+    assert store.all() == []
+    assert not (tmp_path / "sessions").exists()
+
+
+def test_session_save_missing_summary_file_raises_clear_error(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    missing = tmp_path / "does-not-exist.md"
+
+    with pytest.raises(CliError):
+        run(store, ["session", "save", "My Session", "--summary-file", str(missing)])
+    assert store.all() == []
+
+
+def test_session_save_collision_gets_numbered_suffix_without_overwriting(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    first_file = tmp_path / "first.md"
+    first_file.write_text("First summary.", encoding="utf-8")
+    second_file = tmp_path / "second.md"
+    second_file.write_text("Second summary.", encoding="utf-8")
+
+    run(store, ["session", "save", "My Session", "--summary-file", str(first_file)])
+    run(store, ["session", "save", "My Session", "--summary-file", str(second_file)])
+
+    today = date.today().isoformat()
+    sessions_dir = tmp_path / "sessions"
+    assert (sessions_dir / f"{today}-my-session.md").read_text(encoding="utf-8") == "First summary.\n"
+    assert (sessions_dir / f"{today}-my-session-2.md").read_text(encoding="utf-8") == "Second summary.\n"
+    assert len(store.all()) == 2

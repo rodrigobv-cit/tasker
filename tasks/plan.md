@@ -33,8 +33,42 @@ A stdlib-only Python CLI for tracking personal tasks against a local JSON file. 
 ### Feature 6: Delete a task (Use Case 5)
 - [ ] Task 6.1: `delete_task` function + `delete` CLI subcommand + tests (incl. unknown id)
 
+### Checkpoint: Feature 6 complete
+- [ ] `pytest` passes end-to-end
+- [ ] README.md documents install + usage
+- [ ] `git log` shows one commit per Feature
+
+### Feature 7: Save a resumable session (Use Case 6)
+Added after the original six Features shipped, to replace the manual
+two-step "write a file, then hand-craft a task title" process (model-driven,
+per `~/.claude/skills/tasker/SKILL.md`) with one atomic CLI command plus a
+slash command that triggers it. Additive only: no changes to the `Task`
+dataclass or the `tasks.json` shape, no id-reuse fix, no timestamps/priority/
+due-dates — those stay deferred (see `sessions/2026-11-10-tasker-improvements.md`).
+- [x] Task 7.1: `save_session` function (slugify title, date-stamped
+      filename with numbered-suffix collision handling, write summary file,
+      create linked task, save) + nested `session save` CLI subcommand
+      (`--summary-file` or stdin) + tests in `tests/test_cli.py` (happy path
+      via file, happy path via stdin, empty title/summary rejected, missing
+      `--summary-file` surfaces a clear error not a traceback, same-day
+      same-title collision gets a numbered suffix instead of being
+      overwritten)
+- [ ] Task 7.2: Docs + slash command — update `README.md` and `SPEC.md`
+      (done), rewrite the "Saving a session" section of
+      `~/.claude/skills/tasker/SKILL.md` to call `session save` directly
+      instead of the old two-step process, add
+      `~/.claude/commands/save-session.md` (personal slash command) that
+      writes a summary to a temp file and runs `tasker session save`
+
+### Checkpoint: Feature 7 complete
+- [ ] `pytest` passes end-to-end
+- [ ] Manual check: `tasker session save "test" --summary-file <file>`
+      writes `sessions/<date>-test.md` and adds a `Resume session: ...` task
+- [ ] Manual check: `/save-session` works end-to-end in a live session
+- [ ] README.md / SPEC.md reflect the new command
+
 ### Checkpoint: Complete
-- [ ] All six Use Cases implemented and tested
+- [ ] All seven Use Cases implemented and tested
 - [ ] `pytest` passes end-to-end
 - [ ] README.md documents install + usage
 - [ ] `git log` shows one commit per Feature

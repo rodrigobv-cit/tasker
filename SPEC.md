@@ -29,7 +29,24 @@ Success looks like: `tasker add "..."`, `tasker list`, `tasker done <id>`, `task
    - `tasker delete 3` → task removed from storage; prints confirmation.
    - Unknown id → error, no file changes.
 
-6. **First run / corrupt storage**
+6. **Save a resumable session**
+   - `tasker session save "<title>" --summary-file notes.md` → writes
+     `notes.md`'s content to `sessions/<YYYY-MM-DD>-<slug-of-title>.md`
+     (sibling directory of the tasks file), then adds a task titled
+     `Resume session: <title> (see sessions/<file>.md)`; prints both the
+     session file path and the usual `Added #N: ...` confirmation.
+   - No `--summary-file` → summary content is read from stdin instead (for
+     piping, e.g. from a heredoc or another command's output).
+   - Empty/whitespace-only title or summary → rejected with an error, no
+     file written and no task created.
+   - A session file for that date+title already exists → a numbered suffix
+     (`-2`, `-3`, ...) is used instead of overwriting it.
+   - `--summary-file` points at a missing/unreadable file → clear error, not
+     a stack trace.
+   - This is the only command that writes outside `tasks.json`; the
+     `sessions/` directory is created on first use if it doesn't exist.
+
+7. **First run / corrupt storage**
    - `tasks.json` doesn't exist yet → treated as an empty task list, created on first write.
    - `tasks.json` exists but is invalid JSON → clear error message, not a stack trace.
 
@@ -62,6 +79,7 @@ task-tracker/
     test_storage.py
     test_cli.py
   tasks.json            → created at runtime, gitignored
+  sessions/             → created at runtime, gitignored (session summaries)
 ```
 
 ## Code Style
@@ -95,7 +113,7 @@ def add_task(store: TaskStore, title: str) -> Task:
 - **Never:** commit `tasks.json` or any other runtime data; push to a remote without being asked
 
 ## Success Criteria
-- All five commands (`add`, `list`, `done`, `edit`, `delete`) implemented and working via `python -m tasker`
+- All six commands (`add`, `list`, `done`, `edit`, `delete`, `session save`) implemented and working via `python -m tasker`
 - `pytest` passes with tests covering each command
 - `README.md` documents installation and usage
 - Code is committed to a local git repo with a clean, atomic commit history

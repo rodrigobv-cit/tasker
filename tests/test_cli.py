@@ -112,6 +112,80 @@ def test_edit_rejects_empty_title(tmp_path):
     assert store.get(1).title == "Buy milk"
 
 
+def test_add_with_priority_flag_sets_priority(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    run(store, ["add", "Buy milk", "--priority", "high"])
+    assert store.get(1).priority == "high"
+
+
+def test_add_rejects_invalid_priority_flag(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    with pytest.raises(SystemExit):
+        run(store, ["add", "Buy milk", "--priority", "urgent"])
+    assert store.all() == []
+
+
+def test_priority_command_updates_existing_task(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+
+    output = run(store, ["priority", "1", "low"])
+    assert output == "Task #1 priority set to low."
+    assert store.get(1).priority == "low"
+
+
+def test_priority_command_unknown_id_raises(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    with pytest.raises(CliError):
+        run(store, ["priority", "999", "low"])
+
+
+def test_priority_command_rejects_invalid_level(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk")
+    with pytest.raises(SystemExit):
+        run(store, ["priority", "1", "urgent"])
+    assert store.get(1).priority == "normal"
+
+
+def test_list_sorts_by_priority_preserving_insertion_order_within_tier(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("normal one")
+    store.add("high one", priority="high")
+    store.add("low one", priority="low")
+    store.add("normal two")
+    store.add("high two", priority="high")
+
+    output = run(store, ["list"])
+    assert output == (
+        "[ ] #2 high one (high)\n"
+        "[ ] #5 high two (high)\n"
+        "[ ] #1 normal one\n"
+        "[ ] #4 normal two\n"
+        "[ ] #3 low one (low)"
+    )
+
+
+def test_list_output_marks_non_normal_priority(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("Buy milk", priority="high")
+
+    assert run(store, ["list"]) == "[ ] #1 Buy milk (high)"
+
+
+def test_list_pending_and_done_filters_still_sort_by_priority(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    store.add("normal pending")
+    high_done = store.add("high done", priority="high")
+    high_done.done = True
+    low_pending = store.add("low pending", priority="low")
+
+    assert run(store, ["list", "--pending"]) == (
+        "[ ] #1 normal pending\n[ ] #3 low pending (low)"
+    )
+    assert run(store, ["list", "--done"]) == "[x] #2 high done (high)"
+
+
 def test_delete_removes_task(tmp_path):
     store = TaskStore.load(tmp_path / "tasks.json")
     store.add("Buy milk")

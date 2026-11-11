@@ -52,6 +52,20 @@ Success looks like: `tasker add "..."`, `tasker list`, `tasker done <id>`, `task
    - `tasks.json` doesn't exist yet → treated as an empty task list, created on first write.
    - `tasks.json` exists but is invalid JSON → clear error message, not a stack trace.
 
+8. **Set a task's priority**
+   - `tasker add "Pay rent" --priority high` → task created with that
+     priority; omitting `--priority` defaults to `normal`.
+   - `tasker priority 3 low` → changes an existing task's priority; prints
+     confirmation.
+   - Unknown id → same error behavior as `done`/`edit`/`delete`.
+   - Invalid level (not `low`/`normal`/`high`) on either command → rejected
+     at the argument-parsing stage (non-zero exit), no task created/changed.
+   - `tasker list` sorts `high` before `normal` before `low`, preserving
+     insertion order within the same priority; non-normal tasks show a
+     `(high)`/`(low)` suffix after the title.
+   - A task loaded from `tasks.json` with an invalid priority value → clear
+     error, not a stack trace.
+
 ## Tech Stack
 - Python 3.11+, standard library only (`argparse`, `json`, `dataclasses`, `pathlib`)
 - `pytest` for tests (dev dependency only)
@@ -115,7 +129,7 @@ def add_task(store: TaskStore, title: str) -> Task:
 - **Never:** commit `tasks.json` or any other runtime data; push to a remote without being asked
 
 ## Success Criteria
-- All six commands (`add`, `list`, `done`, `edit`, `delete`, `session save`) implemented and working via `python -m tasker`
+- All seven commands (`add`, `list`, `done`, `edit`, `delete`, `session save`, `priority`) implemented and working via `python -m tasker`
 - `pytest` passes with tests covering each command
 - `README.md` documents installation and usage
 - Code is committed to a local git repo with a clean, atomic commit history

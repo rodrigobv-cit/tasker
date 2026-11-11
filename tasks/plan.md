@@ -101,26 +101,26 @@ reserved for valid-syntax-but-unknown-reference cases like an unknown id.
 - [x] Task 9.2: `TaskStore.add()` accepts/validates `priority` (`ValueError`
       on invalid); `load`/`_parse_tasks` rejects an invalid loaded priority
       (`TaskStoreError`); `save()` persists `priority` per task
-- [ ] Task 9.3: CLI — `add --priority {low,normal,high}` (default `normal`);
+- [x] Task 9.3: CLI — `add --priority {low,normal,high}` (default `normal`);
       new top-level `priority <id> <low|normal|high>` command; `list_tasks`
       sorts high→normal→low (stable) and appends a `(high)`/`(low)` suffix
       to non-normal tasks
-- [ ] Task 9.4: Update `SPEC.md` (new Use Case 8) and `README.md`
+- [x] Task 9.4: Update `SPEC.md` (new Use Case 8) and `README.md`
 
 ### Checkpoint: Feature 9 complete
-- [ ] `pytest` passes end-to-end
-- [ ] Manual: add high/low/normal tasks, confirm `list` order and suffixes
-- [ ] Manual: `priority <id> <level>` changes an existing task
-- [ ] Manual: invalid priority in a hand-edited `tasks.json` → clear error
-- [ ] README/SPEC updated
+- [x] `pytest` passes end-to-end
+- [x] Manual: add high/low/normal tasks, confirm `list` order and suffixes
+- [x] Manual: `priority <id> <level>` changes an existing task
+- [x] Manual: invalid priority in a hand-edited `tasks.json` → clear error
+- [x] README/SPEC updated
 
 ### Checkpoint: Complete
 - [x] All seven original Use Cases implemented and tested
-- [ ] Feature 8 and 9 (id-reuse fix, priority) complete
-- [ ] `pytest` passes end-to-end
-- [ ] README.md documents install + usage
-- [ ] `git log` shows one commit per Feature
-- [ ] Ready for code review
+- [x] Feature 8 and 9 (id-reuse fix, priority) complete
+- [x] `pytest` passes end-to-end
+- [x] README.md documents install + usage
+- [x] `git log` shows one commit per Feature
+- [x] Ready for code review
 
 ## Risks and Mitigations
 | Risk | Impact | Mitigation |

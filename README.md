@@ -15,14 +15,26 @@ python -m venv .venv
 
 ```
 tasker add "Buy milk"
+tasker add "Pay rent" --priority high
 tasker list
 tasker list --pending
 tasker list --done
 tasker done 1
 tasker edit 1 "Buy oat milk"
+tasker priority 1 low
 tasker delete 1
 tasker session save "Billing spec review" --summary-file notes.md
 echo "Piped summary" | tasker session save "Quick note"
+```
+
+`--priority` on `add` (and the dedicated `priority <id> <level>` command)
+accepts `low`/`normal`/`high`, default `normal`. `list` sorts high before
+normal before low, and marks non-normal tasks with a `(high)`/`(low)`
+suffix:
+```
+[ ] #2 Pay rent (high)
+[ ] #1 Buy oat milk
+[ ] #3 Read a book (low)
 ```
 
 `session save` writes the summary to

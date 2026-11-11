@@ -4,6 +4,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from tasker.models import PRIORITY_LEVELS
 from tasker.storage import TaskStore, TaskStoreError
 
 
@@ -18,6 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     add_parser = subparsers.add_parser("add", help="add a new task")
     add_parser.add_argument("title")
+    add_parser.add_argument("--priority", choices=["low", "normal", "high"], default="normal")
 
     list_parser = subparsers.add_parser("list", help="list tasks")
     filter_group = list_parser.add_mutually_exclusive_group()
@@ -35,6 +37,10 @@ def build_parser() -> argparse.ArgumentParser:
     delete_parser = subparsers.add_parser("delete", help="delete a task")
     delete_parser.add_argument("id", type=int)
 
+    priority_parser = subparsers.add_parser("priority", help="change a task's priority")
+    priority_parser.add_argument("id", type=int)
+    priority_parser.add_argument("level", choices=["low", "normal", "high"])
+
     session_parser = subparsers.add_parser("session", help="manage resumable session tasks")
     session_subparsers = session_parser.add_subparsers(dest="session_command", required=True)
     session_save_parser = session_subparsers.add_parser(
@@ -51,11 +57,11 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def add_task(store: TaskStore, title: str) -> str:
+def add_task(store: TaskStore, title: str, priority: str = "normal") -> str:
     title = title.strip()
     if not title:
         raise CliError("title must not be empty")
-    task = store.add(title)
+    task = store.add(title, priority=priority)
     store.save()
     return f"Added #{task.id}: {task.title}"
 
@@ -70,8 +76,23 @@ def list_tasks(store: TaskStore, *, pending: bool = False, done: bool = False) -
     if not tasks:
         return "No tasks."
 
-    lines = [f"[{'x' if t.done else ' '}] #{t.id} {t.title}" for t in tasks]
+    order = {level: i for i, level in enumerate(PRIORITY_LEVELS)}
+    tasks = sorted(tasks, key=lambda t: order[t.priority])  # stable: keeps insertion order within a tier
+
+    lines = []
+    for t in tasks:
+        suffix = f" ({t.priority})" if t.priority != "normal" else ""
+        lines.append(f"[{'x' if t.done else ' '}] #{t.id} {t.title}{suffix}")
     return "\n".join(lines)
+
+
+def set_priority(store: TaskStore, task_id: int, level: str) -> str:
+    task = store.get(task_id)
+    if task is None:
+        raise CliError(f"no task with id {task_id}")
+    task.priority = level
+    store.save()
+    return f"Task #{task_id} priority set to {level}."
 
 
 def complete_task(store: TaskStore, task_id: int) -> str:
@@ -144,7 +165,7 @@ def run(store: TaskStore, argv: list[str]) -> str:
     args = parser.parse_args(argv)
 
     if args.command == "add":
-        return add_task(store, args.title)
+        return add_task(store, args.title, priority=args.priority)
     if args.command == "list":
         return list_tasks(store, pending=args.pending, done=args.done)
     if args.command == "done":
@@ -153,6 +174,8 @@ def run(store: TaskStore, argv: list[str]) -> str:
         return edit_task(store, args.id, args.title)
     if args.command == "delete":
         return delete_task(store, args.id)
+    if args.command == "priority":
+        return set_priority(store, args.id, args.level)
     if args.command == "session" and args.session_command == "save":
         if args.summary_file:
             try:

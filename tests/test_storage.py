@@ -23,12 +23,13 @@ def test_load_corrupt_json_raises_clear_error(tmp_path):
         "{}",
         "null",
         '[{"id": 1}]',
-        '[{"id": 1, "title": "x", "done": false, "priority": "high"}]',
+        '[{"id": 1, "title": "x", "done": false, "priority": "urgent"}]',
         '{"tasks": []}',
         '{"next_id": 1}',
         '{"next_id": "x", "tasks": []}',
         '{"next_id": true, "tasks": []}',
         '{"next_id": 1, "tasks": "nope"}',
+        '{"next_id": 2, "tasks": [{"id": 1, "title": "x", "done": false, "priority": "urgent"}]}',
     ],
 )
 def test_load_malformed_shape_raises_clear_error_not_traceback(tmp_path, content):
@@ -63,7 +64,61 @@ def test_save_writes_valid_json(tmp_path):
     store.save()
 
     raw = json.loads(path.read_text(encoding="utf-8"))
-    assert raw == {"next_id": 2, "tasks": [{"id": 1, "title": "Buy milk", "done": False}]}
+    assert raw == {
+        "next_id": 2,
+        "tasks": [{"id": 1, "title": "Buy milk", "done": False, "priority": "normal"}],
+    }
+
+
+def test_add_defaults_priority_to_normal(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    task = store.add("Buy milk")
+    assert task.priority == "normal"
+
+
+def test_add_accepts_explicit_priority(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    task = store.add("Buy milk", priority="high")
+    assert task.priority == "high"
+
+
+def test_add_rejects_invalid_priority(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    with pytest.raises(ValueError):
+        store.add("Buy milk", priority="urgent")
+    assert store.all() == []
+
+
+def test_load_entry_without_priority_defaults_to_normal(tmp_path):
+    path = tmp_path / "tasks.json"
+    path.write_text(
+        json.dumps({"next_id": 2, "tasks": [{"id": 1, "title": "Buy milk", "done": False}]}),
+        encoding="utf-8",
+    )
+    store = TaskStore.load(path)
+    assert store.get(1).priority == "normal"
+
+
+def test_load_invalid_priority_raises_clear_error(tmp_path):
+    path = tmp_path / "tasks.json"
+    path.write_text(
+        json.dumps(
+            {"next_id": 2, "tasks": [{"id": 1, "title": "x", "done": False, "priority": "urgent"}]}
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(TaskStoreError):
+        TaskStore.load(path)
+
+
+def test_save_round_trips_priority(tmp_path):
+    path = tmp_path / "tasks.json"
+    store = TaskStore.load(path)
+    store.add("Buy milk", priority="high")
+    store.save()
+
+    reloaded = TaskStore.load(path)
+    assert reloaded.get(1).priority == "high"
 
 
 def test_load_old_list_format_still_loads(tmp_path):
@@ -99,7 +154,10 @@ def test_save_after_loading_old_format_migrates_to_object_shape(tmp_path):
     store.save()
 
     raw = json.loads(path.read_text(encoding="utf-8"))
-    assert raw == {"next_id": 2, "tasks": [{"id": 1, "title": "Legacy one", "done": False}]}
+    assert raw == {
+        "next_id": 2,
+        "tasks": [{"id": 1, "title": "Legacy one", "done": False, "priority": "normal"}],
+    }
 
     reloaded = TaskStore.load(path)
     assert [t.title for t in reloaded.all()] == ["Legacy one"]

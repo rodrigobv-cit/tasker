@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tasker.models import Task
+from tasker.models import Task, VALID_PRIORITIES
 
 
 class TaskStoreError(Exception):
@@ -45,13 +45,17 @@ class TaskStore:
             tasks = [Task(**item) for item in raw_tasks]
         except (TypeError, AttributeError) as exc:
             raise TaskStoreError(f"{path} contains a malformed task entry: {exc}") from exc
+        for task in tasks:
+            if task.priority not in VALID_PRIORITIES:
+                raise TaskStoreError(f"{path} contains a task with an invalid priority: {task.priority!r}")
         return tasks
 
     def save(self) -> None:
         payload = {
             "next_id": self._next_id,
             "tasks": [
-                {"id": t.id, "title": t.title, "done": t.done} for t in self._tasks
+                {"id": t.id, "title": t.title, "done": t.done, "priority": t.priority}
+                for t in self._tasks
             ],
         }
         self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -65,8 +69,10 @@ class TaskStore:
                 return task
         return None
 
-    def add(self, title: str) -> Task:
-        task = Task(id=self._next_id, title=title)
+    def add(self, title: str, priority: str = "normal") -> Task:
+        if priority not in VALID_PRIORITIES:
+            raise ValueError(f"invalid priority: {priority!r}")
+        task = Task(id=self._next_id, title=title, priority=priority)
         self._next_id += 1
         self._tasks.append(task)
         return task

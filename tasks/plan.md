@@ -96,9 +96,9 @@ dataclass default). Dedicated `priority <id> <level>` command rather than
 extending `edit`. Invalid `--priority`/`<level>` values are rejected by
 argparse `choices=` (`SystemExit`), not `CliError` — `CliError` stays
 reserved for valid-syntax-but-unknown-reference cases like an unknown id.
-- [ ] Task 9.1: Add `priority: str = "normal"` to `Task` + `PRIORITY_LEVELS`/
+- [x] Task 9.1: Add `priority: str = "normal"` to `Task` + `PRIORITY_LEVELS`/
       `VALID_PRIORITIES` constants in `models.py`
-- [ ] Task 9.2: `TaskStore.add()` accepts/validates `priority` (`ValueError`
+- [x] Task 9.2: `TaskStore.add()` accepts/validates `priority` (`ValueError`
       on invalid); `load`/`_parse_tasks` rejects an invalid loaded priority
       (`TaskStoreError`); `save()` persists `priority` per task
 - [ ] Task 9.3: CLI — `add --priority {low,normal,high}` (default `normal`);

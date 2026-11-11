@@ -10,6 +10,8 @@ Success looks like: `tasker add "..."`, `tasker list`, `tasker done <id>`, `task
 1. **Add a task**
    - `tasker add "Buy milk"` → new task created with a unique id, `done=False`; prints `Added #3: Buy milk`.
    - Empty/whitespace-only title → rejected with an error, no task created.
+   - Ids are durable: once assigned, an id is never reused, even after the
+     task holding it is deleted (a persisted counter, not `max(ids) + 1`).
 
 2. **List tasks**
    - `tasker list` → prints all tasks with id, status (`[ ]`/`[x]`), and title.

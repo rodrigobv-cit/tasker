@@ -69,8 +69,54 @@ due-dates — those stay deferred (see `sessions/2026-11-10-tasker-improvements.
       personal slash command (full live-session trigger left for next use)
 - [x] README.md / SPEC.md reflect the new command
 
+### Feature 8: Fix id reuse by persisting the id counter (refines Use Case 1)
+Approved as part of the follow-up brainstorm in
+`sessions/2026-11-10-tasker-improvements.md`. Changes the on-disk shape from
+a flat list to `{"next_id": N, "tasks": [...]}`; old-format files still load
+via a one-time `max+1` fallback, and the first `save()` after this ships
+silently migrates any legacy file (approved one-way migration — the real
+`tasks.json` was backed up first).
+- [x] Task 8.0: Back up the real `tasks.json` → `tasks.json.bak`
+- [x] Task 8.1: `TaskStore.load`/`save` persist `next_id`; legacy flat-list
+      files still load via a one-time `max+1` fallback; malformed shapes
+      (not list, not `{next_id,tasks}` dict, missing either key, non-int or
+      bool `next_id`, `tasks` not a list) raise `TaskStoreError`
+- [x] Task 8.2: Update `README.md`/`SPEC.md`
+
+### Checkpoint: Feature 8 complete
+- [x] `pytest tests/test_storage.py` passes
+- [x] Manual: delete highest id, re-add (fresh process) → new id not reused
+- [x] Manual: real `tasks.json` migrated cleanly, both tasks intact
+- [x] README/SPEC updated
+
+### Feature 9: Task priority (new Use Case 8)
+Also from the same brainstorm. Additive `priority: str = "normal"` field on
+`Task` (no migration needed — missing key just falls through to the
+dataclass default). Dedicated `priority <id> <level>` command rather than
+extending `edit`. Invalid `--priority`/`<level>` values are rejected by
+argparse `choices=` (`SystemExit`), not `CliError` — `CliError` stays
+reserved for valid-syntax-but-unknown-reference cases like an unknown id.
+- [ ] Task 9.1: Add `priority: str = "normal"` to `Task` + `PRIORITY_LEVELS`/
+      `VALID_PRIORITIES` constants in `models.py`
+- [ ] Task 9.2: `TaskStore.add()` accepts/validates `priority` (`ValueError`
+      on invalid); `load`/`_parse_tasks` rejects an invalid loaded priority
+      (`TaskStoreError`); `save()` persists `priority` per task
+- [ ] Task 9.3: CLI — `add --priority {low,normal,high}` (default `normal`);
+      new top-level `priority <id> <low|normal|high>` command; `list_tasks`
+      sorts high→normal→low (stable) and appends a `(high)`/`(low)` suffix
+      to non-normal tasks
+- [ ] Task 9.4: Update `SPEC.md` (new Use Case 8) and `README.md`
+
+### Checkpoint: Feature 9 complete
+- [ ] `pytest` passes end-to-end
+- [ ] Manual: add high/low/normal tasks, confirm `list` order and suffixes
+- [ ] Manual: `priority <id> <level>` changes an existing task
+- [ ] Manual: invalid priority in a hand-edited `tasks.json` → clear error
+- [ ] README/SPEC updated
+
 ### Checkpoint: Complete
-- [x] All seven Use Cases implemented and tested
+- [x] All seven original Use Cases implemented and tested
+- [ ] Feature 8 and 9 (id-reuse fix, priority) complete
 - [ ] `pytest` passes end-to-end
 - [ ] README.md documents install + usage
 - [ ] `git log` shows one commit per Feature

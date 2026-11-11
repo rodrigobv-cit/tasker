@@ -9,35 +9,51 @@ class TaskStoreError(Exception):
 
 
 class TaskStore:
-    def __init__(self, path: Path, tasks: list[Task]):
+    def __init__(self, path: Path, tasks: list[Task], next_id: int | None = None):
         self.path = path
         self._tasks = tasks
-        self._next_id = max((t.id for t in tasks), default=0) + 1
+        self._next_id = next_id if next_id is not None else max((t.id for t in tasks), default=0) + 1
 
     @classmethod
     def load(cls, path: Path) -> "TaskStore":
         if not path.exists():
-            return cls(path, [])
+            return cls(path, [], next_id=1)
 
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
             raise TaskStoreError(f"{path} is not valid JSON: {exc}") from exc
 
-        if not isinstance(raw, list):
-            raise TaskStoreError(f"{path} must contain a JSON list of tasks")
+        if isinstance(raw, list):
+            tasks = cls._parse_tasks(raw, path)
+            return cls(path, tasks)
 
+        if isinstance(raw, dict) and "next_id" in raw and "tasks" in raw:
+            next_id = raw["next_id"]
+            if not isinstance(next_id, int) or isinstance(next_id, bool):
+                raise TaskStoreError(f"{path} has a non-integer next_id")
+            if not isinstance(raw["tasks"], list):
+                raise TaskStoreError(f"{path} 'tasks' must be a JSON list")
+            tasks = cls._parse_tasks(raw["tasks"], path)
+            return cls(path, tasks, next_id=next_id)
+
+        raise TaskStoreError(f"{path} must be a JSON list or an object with 'next_id' and 'tasks'")
+
+    @staticmethod
+    def _parse_tasks(raw_tasks: list, path: Path) -> list[Task]:
         try:
-            tasks = [Task(**item) for item in raw]
+            tasks = [Task(**item) for item in raw_tasks]
         except (TypeError, AttributeError) as exc:
             raise TaskStoreError(f"{path} contains a malformed task entry: {exc}") from exc
-
-        return cls(path, tasks)
+        return tasks
 
     def save(self) -> None:
-        payload = [
-            {"id": t.id, "title": t.title, "done": t.done} for t in self._tasks
-        ]
+        payload = {
+            "next_id": self._next_id,
+            "tasks": [
+                {"id": t.id, "title": t.title, "done": t.done} for t in self._tasks
+            ],
+        }
         self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     def all(self) -> list[Task]:

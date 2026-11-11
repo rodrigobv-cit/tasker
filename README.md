@@ -41,7 +41,6 @@ pytest
 
 ## Known limitations
 
-- Task ids are the highest id in the file + 1 at load time, not a persisted
-  counter. Deleting the highest-numbered task and then adding a new one will
-  reuse that id. Fine for a single-user scratch list; don't rely on an id as
-  a permanent reference.
+- `tasks.json` is stored as `{"next_id": N, "tasks": [...]}`. Older
+  `tasks.json` files (a plain list) still load correctly and are migrated to
+  this shape the first time anything saves — a one-time, one-way upgrade.

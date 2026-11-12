@@ -234,26 +234,60 @@ def test_session_save_reads_summary_from_stdin_when_no_file_given(tmp_path, monk
     assert saved.read_text(encoding="utf-8") == "Piped summary.\n"
 
 
-def test_session_save_rejects_empty_title(tmp_path):
+def test_session_save_blank_title_falls_back_to_auto_title(tmp_path):
     store = TaskStore.load(tmp_path / "tasks.json")
     summary_file = tmp_path / "notes.md"
     summary_file.write_text("content", encoding="utf-8")
 
-    with pytest.raises(CliError):
-        run(store, ["session", "save", "  ", "--summary-file", str(summary_file)])
-    assert store.all() == []
-    assert not (tmp_path / "sessions").exists()
+    run(store, ["session", "save", "  ", "--summary-file", str(summary_file)])
+
+    assert store.all()[0].title.startswith("Resume session: Session ")
 
 
-def test_session_save_rejects_empty_summary(tmp_path):
+def test_session_save_blank_summary_falls_back_to_placeholder(tmp_path):
     store = TaskStore.load(tmp_path / "tasks.json")
     summary_file = tmp_path / "notes.md"
     summary_file.write_text("   ", encoding="utf-8")
 
-    with pytest.raises(CliError):
-        run(store, ["session", "save", "My Session", "--summary-file", str(summary_file)])
-    assert store.all() == []
-    assert not (tmp_path / "sessions").exists()
+    run(store, ["session", "save", "My Session", "--summary-file", str(summary_file)])
+
+    today = date.today().isoformat()
+    saved = tmp_path / "sessions" / f"{today}-my-session.md"
+    assert saved.read_text(encoding="utf-8").startswith("Auto-saved session")
+
+
+class _FakeTty:
+    def isatty(self):
+        return True
+
+    def read(self):
+        raise AssertionError("stdin should not be read when it's a tty with no --summary-file")
+
+
+def test_session_save_with_no_arguments_auto_fills_everything(tmp_path, monkeypatch):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    monkeypatch.setattr("sys.stdin", _FakeTty())
+
+    run(store, ["session", "save"])
+
+    task = store.all()[0]
+    assert task.title.startswith("Resume session: Session ")
+    sessions_dir = tmp_path / "sessions"
+    saved_files = list(sessions_dir.glob("*.md"))
+    assert len(saved_files) == 1
+    assert saved_files[0].read_text(encoding="utf-8").startswith("Auto-saved session")
+
+
+def test_session_save_with_title_but_no_pipe_uses_placeholder_summary(tmp_path, monkeypatch):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    monkeypatch.setattr("sys.stdin", _FakeTty())
+
+    run(store, ["session", "save", "Real title"])
+
+    today = date.today().isoformat()
+    saved = tmp_path / "sessions" / f"{today}-real-title.md"
+    assert saved.read_text(encoding="utf-8").startswith("Auto-saved session")
+    assert store.all()[0].title == f"Resume session: Real title (see sessions/{today}-real-title.md)"
 
 
 def test_session_save_missing_summary_file_raises_clear_error(tmp_path):
@@ -280,3 +314,25 @@ def test_session_save_collision_gets_numbered_suffix_without_overwriting(tmp_pat
     assert (sessions_dir / f"{today}-my-session.md").read_text(encoding="utf-8") == "First summary.\n"
     assert (sessions_dir / f"{today}-my-session-2.md").read_text(encoding="utf-8") == "Second summary.\n"
     assert len(store.all()) == 2
+
+
+def test_session_list_with_no_sessions_dir_prints_friendly_message(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+
+    assert run(store, ["session", "list"]) == "No saved sessions."
+
+
+def test_session_list_shows_saved_files_newest_first(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    first_file = tmp_path / "first.md"
+    first_file.write_text("First.", encoding="utf-8")
+    second_file = tmp_path / "second.md"
+    second_file.write_text("Second.", encoding="utf-8")
+
+    run(store, ["session", "save", "Alpha", "--summary-file", str(first_file)])
+    run(store, ["session", "save", "Zeta", "--summary-file", str(second_file)])
+
+    today = date.today().isoformat()
+    assert run(store, ["session", "list"]) == (
+        f"sessions/{today}-zeta.md\nsessions/{today}-alpha.md"
+    )

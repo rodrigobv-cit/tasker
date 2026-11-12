@@ -38,13 +38,26 @@ Success looks like: `tasker add "..."`, `tasker list`, `tasker done <id>`, `task
      `Resume session: <title> (see sessions/<file>.md)`; prints both the
      session file path and the usual `Added #N: ...` confirmation.
    - No `--summary-file` → summary content is read from stdin instead (for
-     piping, e.g. from a heredoc or another command's output).
-   - Empty/whitespace-only title or summary → rejected with an error, no
-     file written and no task created.
+     piping, e.g. from a heredoc or another command's output), but only if
+     something is actually piped in; an interactive terminal with nothing
+     redirected is treated the same as no summary at all (see below), so the
+     command never blocks waiting for input.
+   - Omitting the title, or a blank/whitespace-only title → a timestamp-based
+     title is generated automatically (`Session <YYYY-MM-DD HH:MM:SS>`),
+     instead of an error.
+   - No usable summary (no `--summary-file`, and nothing piped via stdin), or
+     a blank/whitespace-only one → a placeholder summary is written instead
+     of an error.
+   - `tasker session save` with no arguments at all is therefore valid — it
+     creates a session file and linked task from auto-generated content
+     alone.
    - A session file for that date+title already exists → a numbered suffix
      (`-2`, `-3`, ...) is used instead of overwriting it.
    - `--summary-file` points at a missing/unreadable file → clear error, not
      a stack trace.
+   - `tasker session list` → prints every file under `sessions/`, newest
+     first, one per line as `sessions/<filename>`; no saved sessions yet →
+     a friendly message, not an error.
    - This is the only command that writes outside `tasks.json`; the
      `sessions/` directory is created on first use if it doesn't exist.
 
@@ -129,7 +142,7 @@ def add_task(store: TaskStore, title: str) -> Task:
 - **Never:** commit `tasks.json` or any other runtime data; push to a remote without being asked
 
 ## Success Criteria
-- All seven commands (`add`, `list`, `done`, `edit`, `delete`, `session save`, `priority`) implemented and working via `python -m tasker`
+- All eight commands (`add`, `list`, `done`, `edit`, `delete`, `session save`, `session list`, `priority`) implemented and working via `python -m tasker`
 - `pytest` passes with tests covering each command
 - `README.md` documents installation and usage
 - Code is committed to a local git repo with a clean, atomic commit history

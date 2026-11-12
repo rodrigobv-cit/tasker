@@ -1,7 +1,7 @@
 import argparse
 import re
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from tasker.models import PRIORITY_LEVELS
@@ -46,13 +46,15 @@ def build_parser() -> argparse.ArgumentParser:
     session_save_parser = session_subparsers.add_parser(
         "save", help="write a session summary and link a resumable task to it"
     )
-    session_save_parser.add_argument("title")
+    session_save_parser.add_argument("title", nargs="?", default=None)
     session_save_parser.add_argument(
         "--summary-file",
         dest="summary_file",
         default=None,
         help="path to the summary content; omit to read it from stdin",
     )
+
+    session_subparsers.add_parser("list", help="list saved session files")
 
     return parser
 
@@ -125,13 +127,13 @@ def delete_task(store: TaskStore, task_id: int) -> str:
     return f"Task #{task_id} deleted."
 
 
-def save_session(store: TaskStore, title: str, summary: str) -> str:
-    title = title.strip()
+def save_session(store: TaskStore, title: str | None, summary: str) -> str:
+    title = (title or "").strip()
     if not title:
-        raise CliError("title must not be empty")
+        title = f"Session {datetime.now():%Y-%m-%d %H:%M:%S}"
     summary = summary.strip()
     if not summary:
-        raise CliError("summary must not be empty")
+        summary = f"Auto-saved session (no summary provided) at {datetime.now():%Y-%m-%d %H:%M:%S}."
 
     sessions_dir = store.path.parent / "sessions"
     sessions_dir.mkdir(parents=True, exist_ok=True)
@@ -160,6 +162,16 @@ def _slugify(title: str) -> str:
     return slug[:40].strip("-") or "session"
 
 
+def list_sessions(store: TaskStore) -> str:
+    sessions_dir = store.path.parent / "sessions"
+    if not sessions_dir.exists():
+        return "No saved sessions."
+    files = sorted(sessions_dir.glob("*.md"), reverse=True)
+    if not files:
+        return "No saved sessions."
+    return "\n".join(f"sessions/{f.name}" for f in files)
+
+
 def run(store: TaskStore, argv: list[str]) -> str:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -182,9 +194,13 @@ def run(store: TaskStore, argv: list[str]) -> str:
                 summary = Path(args.summary_file).read_text(encoding="utf-8")
             except OSError as exc:
                 raise CliError(f"could not read summary file: {exc}") from exc
-        else:
+        elif not sys.stdin.isatty():
             summary = sys.stdin.read()
+        else:
+            summary = ""
         return save_session(store, args.title, summary)
+    if args.command == "session" and args.session_command == "list":
+        return list_sessions(store)
 
     raise CliError(f"unknown command: {args.command}")
 

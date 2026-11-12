@@ -114,9 +114,31 @@ reserved for valid-syntax-but-unknown-reference cases like an unknown id.
 - [x] Manual: invalid priority in a hand-edited `tasks.json` → clear error
 - [x] README/SPEC updated
 
+### Feature 10: Zero-parameter session save + session list (extends Use Case 6)
+Requested after Feature 7 shipped: let `tasker session save` succeed with no
+arguments at all (auto-generate title/summary instead of erroring on blank
+input), and add `tasker session list` to show what's under `sessions/`.
+Full design in `~/.claude/plans/zippy-prancing-chipmunk.md`.
+- [x] Task 10.1: Auto-fill title/summary on `session save` (optional title
+      positional; `datetime.now()`-based auto title/placeholder summary when
+      blank/omitted; avoid blocking on `sys.stdin.read()` when stdin is a
+      tty with nothing piped)
+- [x] Task 10.2: `session list` command (lists `sessions/*.md`, newest
+      first; "No saved sessions." when empty)
+
+### Checkpoint: Feature 10 complete
+- [x] `pytest` passes end-to-end
+- [x] Manual: `session save` with no args doesn't hang, creates auto-titled
+      task + placeholder session file
+- [x] Manual: `session save` twice then `session list` → both shown, newest
+      first
+- [x] README/SPEC updated; `~/.claude/skills/tasker/SKILL.md` commands table
+      updated
+
 ### Checkpoint: Complete
 - [x] All seven original Use Cases implemented and tested
-- [x] Feature 8 and 9 (id-reuse fix, priority) complete
+- [x] Feature 8, 9, and 10 (id-reuse fix, priority, auto session save +
+      session list) complete
 - [x] `pytest` passes end-to-end
 - [x] README.md documents install + usage
 - [x] `git log` shows one commit per Feature

@@ -25,6 +25,8 @@ tasker priority 1 low
 tasker delete 1
 tasker session save "Billing spec review" --summary-file notes.md
 echo "Piped summary" | tasker session save "Quick note"
+tasker session save
+tasker session list
 ```
 
 `--priority` on `add` (and the dedicated `priority <id> <level>` command)
@@ -40,7 +42,16 @@ suffix:
 `session save` writes the summary to
 `sessions/<date>-<slug-of-title>.md` (sibling of the tasks file) and adds a
 `Resume session: <title> (see sessions/<file>.md)` task in one call. Omit
-`--summary-file` to pipe the summary in via stdin instead.
+`--summary-file` to pipe the summary in via stdin instead. Both the title
+and the summary are optional: a bare `tasker session save` auto-generates a
+timestamp-based title and a placeholder summary — it never blocks waiting
+for input.
+
+`session list` shows every file under `sessions/`, newest first:
+```
+sessions/2026-11-12-real-title.md
+sessions/2026-11-10-tasker-improvements.md
+```
 
 Use `--file path/to/tasks.json` to point at a different storage file. `--file`
 must come *before* the subcommand (`tasker --file x.json add ...`), not after.

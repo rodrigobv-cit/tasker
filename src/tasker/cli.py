@@ -1,7 +1,7 @@
 import argparse
 import re
 import sys
-from datetime import date, datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from tasker.models import PRIORITY_LEVELS
@@ -127,18 +127,23 @@ def delete_task(store: TaskStore, task_id: int) -> str:
     return f"Task #{task_id} deleted."
 
 
+def _now() -> datetime:
+    return datetime.now()
+
+
 def save_session(store: TaskStore, title: str | None, summary: str) -> str:
+    now = _now()
     title = (title or "").strip()
     if not title:
-        title = f"Session {datetime.now():%Y-%m-%d %H:%M:%S}"
+        title = f"Session {now:%Y-%m-%d %H:%M:%S}"
     summary = summary.strip()
     if not summary:
-        summary = f"Auto-saved session (no summary provided) at {datetime.now():%Y-%m-%d %H:%M:%S}."
+        summary = f"Auto-saved session (no summary provided) at {now:%Y-%m-%d %H:%M:%S}."
 
     sessions_dir = store.path.parent / "sessions"
     sessions_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = _session_filename(sessions_dir, title)
+    filename = _session_filename(sessions_dir, title, now)
     (sessions_dir / filename).write_text(summary + "\n", encoding="utf-8")
 
     task = store.add(f"Resume session: {title} (see sessions/{filename})")
@@ -146,15 +151,21 @@ def save_session(store: TaskStore, title: str | None, summary: str) -> str:
     return f"Saved session to sessions/{filename}\nAdded #{task.id}: {task.title}"
 
 
-def _session_filename(sessions_dir: Path, title: str) -> str:
+def _session_filename(sessions_dir: Path, title: str, now: datetime) -> str:
     slug = _slugify(title)
-    base = f"{date.today().isoformat()}-{slug}"
-    filename = f"{base}.md"
-    counter = 2
-    while (sessions_dir / filename).exists():
-        filename = f"{base}-{counter}.md"
-        counter += 1
-    return filename
+    # The save timestamp (down to milliseconds) is embedded in the filename so
+    # list_sessions can sort on filename text alone and still get true save
+    # order, instead of inferring it from the title slug (which broke when an
+    # unrelated title happened to look like a numbered collision of another).
+    # On a collision, the timestamp itself is bumped forward (rather than
+    # appending a separate counter) so the newer file always sorts after the
+    # older one, purely as filename text, with no extra ordering logic.
+    while True:
+        timestamp = f"{now:%Y-%m-%d-%H%M%S}{now.microsecond // 1000:03d}"
+        filename = f"{timestamp}-{slug}.md"
+        if not (sessions_dir / filename).exists():
+            return filename
+        now += timedelta(milliseconds=1)
 
 
 def _slugify(title: str) -> str:
@@ -170,17 +181,9 @@ def list_sessions(store: TaskStore) -> str:
     if not files:
         return "No saved sessions."
 
-    def sort_key(path: Path) -> tuple[str, int]:
-        # A numbered-suffix file (e.g. "...-my-session-2.md") only counts as a
-        # later save of the same base file if that base file actually exists —
-        # otherwise a title that just happens to end in "-<number>" (like an
-        # auto-generated timestamp title) would be misread as a collision.
-        match = re.match(r"^(.*)-(\d+)$", path.stem)
-        if match and (sessions_dir / f"{match.group(1)}.md").exists():
-            return (match.group(1), int(match.group(2)))
-        return (path.stem, 1)
-
-    files.sort(key=sort_key, reverse=True)
+    # Filenames carry an embedded save timestamp as their leading segment, so
+    # sorting on the raw filename text already gives true save order.
+    files.sort(key=lambda p: p.name, reverse=True)
     return "\n".join(f"sessions/{f.name}" for f in files)
 
 

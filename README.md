@@ -40,7 +40,8 @@ suffix:
 ```
 
 `session save` writes the summary to
-`sessions/<date>-<slug-of-title>.md` (sibling of the tasks file) and adds a
+`sessions/<date>-<time>-<slug-of-title>.md` (sibling of the tasks file,
+filename stamped with the save time down to milliseconds) and adds a
 `Resume session: <title> (see sessions/<file>.md)` task in one call. Omit
 `--summary-file` to pipe the summary in via stdin instead. Both the title
 and the summary are optional: a bare `tasker session save` auto-generates a
@@ -48,12 +49,13 @@ timestamp-based title and a placeholder summary — it never blocks waiting
 for input.
 
 `session list` shows every file under `sessions/`, newest (most recently
-saved) first — including same-day, same-title saves, where the numbered
-suffix is *not* the sort key:
+saved) first, sorted on filename text alone — correct even for same-day,
+same-title saves, since the embedded save timestamp (not the title slug) is
+what orders them:
 ```
-sessions/2026-11-12-my-session-2.md
-sessions/2026-11-12-my-session.md
-sessions/2026-11-10-tasker-improvements.md
+sessions/2026-11-12-145718482-my-session.md
+sessions/2026-11-12-090000000-my-session.md
+sessions/2026-11-10-083000000-tasker-improvements.md
 ```
 
 Use `--file path/to/tasks.json` to point at a different storage file. `--file`

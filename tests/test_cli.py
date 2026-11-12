@@ -1,7 +1,8 @@
-from datetime import date
+from datetime import datetime
 
 import pytest
 
+import tasker.cli as cli
 from tasker.cli import CliError, run
 from tasker.storage import TaskStore
 
@@ -203,15 +204,15 @@ def test_delete_unknown_id_raises_without_changing_file(tmp_path):
     assert len(store.all()) == 1
 
 
-def test_session_save_writes_file_and_creates_linked_task(tmp_path):
+def test_session_save_writes_file_and_creates_linked_task(tmp_path, monkeypatch):
     store = TaskStore.load(tmp_path / "tasks.json")
     summary_file = tmp_path / "notes.md"
     summary_file.write_text("Status: in progress.", encoding="utf-8")
+    monkeypatch.setattr(cli, "_now", lambda: datetime(2026, 11, 12, 14, 57, 18, 482000))
 
     output = run(store, ["session", "save", "My Session", "--summary-file", str(summary_file)])
 
-    today = date.today().isoformat()
-    expected_filename = f"{today}-my-session.md"
+    expected_filename = "2026-11-12-145718482-my-session.md"
     assert output == (
         f"Saved session to sessions/{expected_filename}\n"
         f"Added #1: Resume session: My Session (see sessions/{expected_filename})"
@@ -226,11 +227,11 @@ def test_session_save_reads_summary_from_stdin_when_no_file_given(tmp_path, monk
 
     store = TaskStore.load(tmp_path / "tasks.json")
     monkeypatch.setattr("sys.stdin", io.StringIO("Piped summary."))
+    monkeypatch.setattr(cli, "_now", lambda: datetime(2026, 11, 12, 9, 5, 3, 7000))
 
     run(store, ["session", "save", "Piped"])
 
-    today = date.today().isoformat()
-    saved = tmp_path / "sessions" / f"{today}-piped.md"
+    saved = tmp_path / "sessions" / "2026-11-12-090503007-piped.md"
     assert saved.read_text(encoding="utf-8") == "Piped summary.\n"
 
 
@@ -244,15 +245,15 @@ def test_session_save_blank_title_falls_back_to_auto_title(tmp_path):
     assert store.all()[0].title.startswith("Resume session: Session ")
 
 
-def test_session_save_blank_summary_falls_back_to_placeholder(tmp_path):
+def test_session_save_blank_summary_falls_back_to_placeholder(tmp_path, monkeypatch):
     store = TaskStore.load(tmp_path / "tasks.json")
     summary_file = tmp_path / "notes.md"
     summary_file.write_text("   ", encoding="utf-8")
+    monkeypatch.setattr(cli, "_now", lambda: datetime(2026, 11, 12, 10, 0, 0, 0))
 
     run(store, ["session", "save", "My Session", "--summary-file", str(summary_file)])
 
-    today = date.today().isoformat()
-    saved = tmp_path / "sessions" / f"{today}-my-session.md"
+    saved = tmp_path / "sessions" / "2026-11-12-100000000-my-session.md"
     assert saved.read_text(encoding="utf-8").startswith("Auto-saved session")
 
 
@@ -281,13 +282,14 @@ def test_session_save_with_no_arguments_auto_fills_everything(tmp_path, monkeypa
 def test_session_save_with_title_but_no_pipe_uses_placeholder_summary(tmp_path, monkeypatch):
     store = TaskStore.load(tmp_path / "tasks.json")
     monkeypatch.setattr("sys.stdin", _FakeTty())
+    monkeypatch.setattr(cli, "_now", lambda: datetime(2026, 11, 12, 11, 11, 11, 111000))
 
     run(store, ["session", "save", "Real title"])
 
-    today = date.today().isoformat()
-    saved = tmp_path / "sessions" / f"{today}-real-title.md"
+    filename = "2026-11-12-111111111-real-title.md"
+    saved = tmp_path / "sessions" / filename
     assert saved.read_text(encoding="utf-8").startswith("Auto-saved session")
-    assert store.all()[0].title == f"Resume session: Real title (see sessions/{today}-real-title.md)"
+    assert store.all()[0].title == f"Resume session: Real title (see sessions/{filename})"
 
 
 def test_session_save_missing_summary_file_raises_clear_error(tmp_path):
@@ -299,20 +301,23 @@ def test_session_save_missing_summary_file_raises_clear_error(tmp_path):
     assert store.all() == []
 
 
-def test_session_save_collision_gets_numbered_suffix_without_overwriting(tmp_path):
+def test_session_save_collision_bumps_timestamp_without_overwriting(tmp_path, monkeypatch):
     store = TaskStore.load(tmp_path / "tasks.json")
     first_file = tmp_path / "first.md"
     first_file.write_text("First summary.", encoding="utf-8")
     second_file = tmp_path / "second.md"
     second_file.write_text("Second summary.", encoding="utf-8")
+    # Same instant for both saves, to force the collision this test is checking.
+    monkeypatch.setattr(cli, "_now", lambda: datetime(2026, 11, 12, 12, 0, 0, 0))
 
     run(store, ["session", "save", "My Session", "--summary-file", str(first_file)])
     run(store, ["session", "save", "My Session", "--summary-file", str(second_file)])
 
-    today = date.today().isoformat()
     sessions_dir = tmp_path / "sessions"
-    assert (sessions_dir / f"{today}-my-session.md").read_text(encoding="utf-8") == "First summary.\n"
-    assert (sessions_dir / f"{today}-my-session-2.md").read_text(encoding="utf-8") == "Second summary.\n"
+    first_name = "2026-11-12-120000000-my-session.md"
+    second_name = "2026-11-12-120000001-my-session.md"
+    assert (sessions_dir / first_name).read_text(encoding="utf-8") == "First summary.\n"
+    assert (sessions_dir / second_name).read_text(encoding="utf-8") == "Second summary.\n"
     assert len(store.all()) == 2
 
 
@@ -322,33 +327,64 @@ def test_session_list_with_no_sessions_dir_prints_friendly_message(tmp_path):
     assert run(store, ["session", "list"]) == "No saved sessions."
 
 
-def test_session_list_shows_saved_files_newest_first(tmp_path):
+def test_session_list_shows_saved_files_newest_first(tmp_path, monkeypatch):
     store = TaskStore.load(tmp_path / "tasks.json")
     first_file = tmp_path / "first.md"
     first_file.write_text("First.", encoding="utf-8")
     second_file = tmp_path / "second.md"
     second_file.write_text("Second.", encoding="utf-8")
+    moments = iter([
+        datetime(2026, 11, 12, 9, 0, 0, 0),
+        datetime(2026, 11, 12, 9, 0, 1, 0),
+    ])
+    monkeypatch.setattr(cli, "_now", lambda: next(moments))
 
     run(store, ["session", "save", "Alpha", "--summary-file", str(first_file)])
     run(store, ["session", "save", "Zeta", "--summary-file", str(second_file)])
 
-    today = date.today().isoformat()
     assert run(store, ["session", "list"]) == (
-        f"sessions/{today}-zeta.md\nsessions/{today}-alpha.md"
+        "sessions/2026-11-12-090001000-zeta.md\n"
+        "sessions/2026-11-12-090000000-alpha.md"
     )
 
 
-def test_session_list_orders_same_title_collisions_by_save_time_not_filename_text(tmp_path):
+def test_session_list_orders_same_title_collisions_by_save_time(tmp_path, monkeypatch):
     store = TaskStore.load(tmp_path / "tasks.json")
     first_file = tmp_path / "first.md"
     first_file.write_text("First.", encoding="utf-8")
     second_file = tmp_path / "second.md"
     second_file.write_text("Second.", encoding="utf-8")
+    # Same instant for both saves, forcing the timestamp-bump collision path.
+    monkeypatch.setattr(cli, "_now", lambda: datetime(2026, 11, 12, 13, 30, 0, 0))
 
     run(store, ["session", "save", "My Session", "--summary-file", str(first_file)])
     run(store, ["session", "save", "My Session", "--summary-file", str(second_file)])
 
-    today = date.today().isoformat()
     assert run(store, ["session", "list"]) == (
-        f"sessions/{today}-my-session-2.md\nsessions/{today}-my-session.md"
+        "sessions/2026-11-12-133000001-my-session.md\n"
+        "sessions/2026-11-12-133000000-my-session.md"
+    )
+
+
+def test_session_list_orders_by_save_time_even_when_titles_look_like_collisions(tmp_path, monkeypatch):
+    # Regression test: "My Session" is saved after "My Session 2", so it must
+    # list first (it's the newer save) even though "my-session-2.md" looks
+    # like a numbered collision of "my-session.md".
+    store = TaskStore.load(tmp_path / "tasks.json")
+    first_file = tmp_path / "first.md"
+    first_file.write_text("First.", encoding="utf-8")
+    second_file = tmp_path / "second.md"
+    second_file.write_text("Second.", encoding="utf-8")
+    moments = iter([
+        datetime(2026, 11, 12, 9, 0, 0, 0),
+        datetime(2026, 11, 12, 9, 0, 1, 0),
+    ])
+    monkeypatch.setattr(cli, "_now", lambda: next(moments))
+
+    run(store, ["session", "save", "My Session 2", "--summary-file", str(first_file)])
+    run(store, ["session", "save", "My Session", "--summary-file", str(second_file)])
+
+    assert run(store, ["session", "list"]) == (
+        "sessions/2026-11-12-090001000-my-session.md\n"
+        "sessions/2026-11-12-090000000-my-session-2.md"
     )

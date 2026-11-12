@@ -33,8 +33,10 @@ Success looks like: `tasker add "..."`, `tasker list`, `tasker done <id>`, `task
 
 6. **Save a resumable session**
    - `tasker session save "<title>" --summary-file notes.md` → writes
-     `notes.md`'s content to `sessions/<YYYY-MM-DD>-<slug-of-title>.md`
-     (sibling directory of the tasks file), then adds a task titled
+     `notes.md`'s content to
+     `sessions/<YYYY-MM-DD>-<HHMMSSmmm>-<slug-of-title>.md` (sibling
+     directory of the tasks file, filename stamped with the save time down
+     to milliseconds), then adds a task titled
      `Resume session: <title> (see sessions/<file>.md)`; prints both the
      session file path and the usual `Added #N: ...` confirmation.
    - No `--summary-file` → summary content is read from stdin instead (for
@@ -51,13 +53,18 @@ Success looks like: `tasker add "..."`, `tasker list`, `tasker done <id>`, `task
    - `tasker session save` with no arguments at all is therefore valid — it
      creates a session file and linked task from auto-generated content
      alone.
-   - A session file for that date+title already exists → a numbered suffix
-     (`-2`, `-3`, ...) is used instead of overwriting it.
+   - A session file with that exact save timestamp+title already exists
+     (only possible if two saves land in the same millisecond) → the
+     timestamp is bumped forward by a millisecond, repeated until free,
+     instead of overwriting the existing file. Because the disambiguator is
+     the timestamp itself, `session list`'s newest-first order always holds,
+     with no separate suffix-based ordering logic needed.
    - `--summary-file` points at a missing/unreadable file → clear error, not
      a stack trace.
    - `tasker session list` → prints every file under `sessions/`, newest
-     first, one per line as `sessions/<filename>`; no saved sessions yet →
-     a friendly message, not an error.
+     first, one per line as `sessions/<filename>`, sorted by filename text
+     alone (correct because the save timestamp is the filename's leading
+     segment); no saved sessions yet → a friendly message, not an error.
    - This is the only command that writes outside `tasks.json`; the
      `sessions/` directory is created on first use if it doesn't exist.
 

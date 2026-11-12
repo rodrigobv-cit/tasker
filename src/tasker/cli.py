@@ -166,9 +166,21 @@ def list_sessions(store: TaskStore) -> str:
     sessions_dir = store.path.parent / "sessions"
     if not sessions_dir.exists():
         return "No saved sessions."
-    files = sorted(sessions_dir.glob("*.md"), reverse=True)
+    files = list(sessions_dir.glob("*.md"))
     if not files:
         return "No saved sessions."
+
+    def sort_key(path: Path) -> tuple[str, int]:
+        # A numbered-suffix file (e.g. "...-my-session-2.md") only counts as a
+        # later save of the same base file if that base file actually exists —
+        # otherwise a title that just happens to end in "-<number>" (like an
+        # auto-generated timestamp title) would be misread as a collision.
+        match = re.match(r"^(.*)-(\d+)$", path.stem)
+        if match and (sessions_dir / f"{match.group(1)}.md").exists():
+            return (match.group(1), int(match.group(2)))
+        return (path.stem, 1)
+
+    files.sort(key=sort_key, reverse=True)
     return "\n".join(f"sessions/{f.name}" for f in files)
 
 

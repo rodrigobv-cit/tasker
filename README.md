@@ -47,9 +47,12 @@ and the summary are optional: a bare `tasker session save` auto-generates a
 timestamp-based title and a placeholder summary — it never blocks waiting
 for input.
 
-`session list` shows every file under `sessions/`, newest first:
+`session list` shows every file under `sessions/`, newest (most recently
+saved) first — including same-day, same-title saves, where the numbered
+suffix is *not* the sort key:
 ```
-sessions/2026-11-12-real-title.md
+sessions/2026-11-12-my-session-2.md
+sessions/2026-11-12-my-session.md
 sessions/2026-11-10-tasker-improvements.md
 ```
 

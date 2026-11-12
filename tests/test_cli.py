@@ -336,3 +336,19 @@ def test_session_list_shows_saved_files_newest_first(tmp_path):
     assert run(store, ["session", "list"]) == (
         f"sessions/{today}-zeta.md\nsessions/{today}-alpha.md"
     )
+
+
+def test_session_list_orders_same_title_collisions_by_save_time_not_filename_text(tmp_path):
+    store = TaskStore.load(tmp_path / "tasks.json")
+    first_file = tmp_path / "first.md"
+    first_file.write_text("First.", encoding="utf-8")
+    second_file = tmp_path / "second.md"
+    second_file.write_text("Second.", encoding="utf-8")
+
+    run(store, ["session", "save", "My Session", "--summary-file", str(first_file)])
+    run(store, ["session", "save", "My Session", "--summary-file", str(second_file)])
+
+    today = date.today().isoformat()
+    assert run(store, ["session", "list"]) == (
+        f"sessions/{today}-my-session-2.md\nsessions/{today}-my-session.md"
+    )

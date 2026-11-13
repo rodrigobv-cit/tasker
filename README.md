@@ -39,14 +39,17 @@ suffix:
 [ ] #3 Read a book (low)
 ```
 
-`session save` writes the summary to
-`sessions/<date>-<time>-<slug-of-title>.md` (sibling of the tasks file,
-filename stamped with the save time down to milliseconds) and adds a
-`Resume session: <title> (see sessions/<file>.md)` task in one call. Omit
-`--summary-file` to pipe the summary in via stdin instead. Both the title
-and the summary are optional: a bare `tasker session save` auto-generates a
-timestamp-based title and a placeholder summary — it never blocks waiting
-for input.
+`session save`:
+- Writes the summary to `sessions/<date>-<time>-<slug-of-title>.md`
+  (sibling of the tasks file, filename stamped with the save time down to
+  milliseconds).
+- Adds a `Resume session: <title> (see sessions/<file>.md)` task, in the
+  same call.
+- Accepts the summary via `--summary-file`, or piped in via stdin if
+  that's omitted.
+- Title and summary are both optional — a bare `tasker session save`
+  auto-generates a timestamp-based title and a placeholder summary; it
+  never blocks waiting for input.
 
 `session list` shows every file under `sessions/`, newest (most recently
 saved) first, sorted on filename text alone — correct even for same-day,

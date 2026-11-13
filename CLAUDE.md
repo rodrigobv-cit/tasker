@@ -49,7 +49,10 @@ sessions/      → created at runtime, gitignored (resumable session summaries)
   rather than asserting against the real clock.
 
 ## Boundaries
-- **Always:** run `pytest` before considering a task done.
+- **Always:** run `pytest` before considering a task done. When asked to
+  "ship it", commit on a feature branch, push that branch, and open a PR —
+  never push directly to `main`, even if a direct push was approved earlier
+  in the same conversation.
 - **Ask first:** adding a third-party dependency; changing the `tasks.json`
   storage format in a breaking way.
 - **Never:** commit `tasks.json`, `tasks.json.bak`, or anything under

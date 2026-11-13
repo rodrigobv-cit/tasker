@@ -1,7 +1,9 @@
 # tasker
 
-A local command-line task tracker. No accounts, no server — tasks live in a
-`tasks.json` file in the current directory.
+A local command-line task tracker.
+
+No accounts, no server — tasks live in a `tasks.json` file in the current
+directory.
 
 ## Install
 
